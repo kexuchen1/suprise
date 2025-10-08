@@ -1,0 +1,322 @@
+dart
+class AppConstants {
+  static const String appName = 'SwiftShift';
+  static const String appVersion = '1.0.0';
+  
+  static const String memoriesKey = 'memories_list';
+  static const String settingsKey = 'app_settings';
+  
+  static const String openAIApiKey = 'YOUR_API_KEY';
+}
+import 'package:flutter/material.dart';
+
+class ColorPalette {
+  static const Color primaryGold = Color(0xFFD4AF37);
+  static const Color secondaryGold = Color(0xFFF5E6B3);
+  static const Color darkBrown = Color(0xFF5D4037);
+  static const Color lightBeige = Color(0xFFF5F5DC);
+  static const Color ceramicWhite = Color(0xFFF8F8F8);
+  static const Color crackGray = Color(0xFF9E9E9E);
+}
+import 'package:flutter/material.dart';
+import 'color_palette.dart';
+
+class AppTheme {
+  static ThemeData get lightTheme {
+    return ThemeData(
+      primaryColor: ColorPalette.primaryGold,
+      colorScheme: ColorScheme.light(
+        primary: ColorPalette.primaryGold,
+        secondary: ColorPalette.secondaryGold,
+        background: ColorPalette.ceramicWhite,
+      ),
+      fontFamily: 'NotoSans', // 可以在pubspec.yaml中配置中文字体
+      appBarTheme: const AppBarTheme(
+        backgroundColor: ColorPalette.primaryGold,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      cardTheme: CardTheme(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
+
+class Memory {
+  final String id;
+  final String title;
+  final String content;
+  final DateTime date;
+  final String emotion; // 如: 'sad', 'anxious', 'disappointed'
+  final String? imagePath; // 本地图片路径
+  final String aiResponse; // AI的引导回应
+  
+  Memory({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.date,
+    required this.emotion,
+    this.imagePath,
+    required this.aiResponse,
+  });
+  
+  // 转换为Map用于存储
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'content': content,
+      'date': date.toIso8601String(),
+      'emotion': emotion,
+      'imagePath': imagePath,
+      'aiResponse': aiResponse,
+    };
+  }
+  
+  // 从Map创建对象
+  factory Memory.fromMap(Map<String, dynamic> map) {
+    return Memory(
+      id: map['id'],
+      title: map['title'],
+      content: map['content'],
+      date: DateTime.parse(map['date']),
+      emotion: map['emotion'],
+      imagePath: map['imagePath'],
+      aiResponse: map['aiResponse'],
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import 'app/app.dart';
+
+void main() {
+  runApp(const KintsugiApp());
+}
+import 'package:flutter/material.dart';
+import '../core/themes/app_theme.dart';
+import 'routes.dart';
+
+class KintsugiApp extends StatelessWidget {
+  const KintsugiApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Kintsugi',
+      theme: AppTheme.lightTheme,
+      initialRoute: '/',
+      onGenerateRoute: RouteGenerator.generateRoute,
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import '../presentation/pages/home_page.dart';
+import '../presentation/pages/create_memory_page.dart';
+import '../presentation/pages/memory_detail_page.dart';
+
+class RouteGenerator {
+  static Route<dynamic> generateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case '/':
+        return MaterialPageRoute(builder: (_) => const HomePage());
+      case '/create_memory':
+        return MaterialPageRoute(builder: (_) => const CreateMemoryPage());
+      case '/memory_detail':
+        final Memory memory = settings.arguments as Memory;
+        return MaterialPageRoute(
+          builder: (_) => MemoryDetailPage(memory: memory),
+        );
+      default:
+        return _errorRoute();
+    }
+  }
+
+  static Route<dynamic> _errorRoute() {
+    return MaterialPageRoute(builder: (_) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('错误')),
+        body: const Center(child: Text('页面不存在')),
+      );
+    });
+  }
+}
+import 'package:flutter/material.dart';
+import '../../data/models/memory_model.dart';
+import '../widgets/memory_card.dart';
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Memory> memories = []; // 暂时为空，后面会实现数据存储
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Kintsugi'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              // 跳转到设置页面
+            },
+          ),
+        ],
+      ),
+      body: memories.isEmpty
+          ? _buildEmptyState()
+          : ListView.builder(
+              itemCount: memories.length,
+              itemBuilder: (context, index) {
+                return MemoryCard(memory: memories[index]);
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/create_memory');
+        },
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.auto_awesome,
+            size: 80,
+            color: Colors.grey[300],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            '还没有任何记录',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Colors.grey,
+                ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            '点击下方按钮开始记录你的感悟',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+}
+import 'package:flutter/material.dart';
+import '../../data/models/memory_model.dart';
+
+class MemoryCard extends StatelessWidget {
+  final Memory memory;
+  
+  const MemoryCard({
+    super.key,
+    required this.memory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ListTile(
+        leading: _buildEmotionIcon(memory.emotion),
+        title: Text(
+          memory.title,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          memory.content.length > 50 
+              ? '${memory.content.substring(0, 50)}...' 
+              : memory.content,
+        ),
+        trailing: Text(
+          _formatDate(memory.date),
+          style: const TextStyle(color: Colors.grey, fontSize: 12),
+        ),
+        onTap: () {
+          Navigator.pushNamed(
+            context, 
+            '/memory_detail', 
+            arguments: memory
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEmotionIcon(String emotion) {
+    IconData icon;
+    Color color;
+    
+    switch (emotion) {
+      case 'sad':
+        icon = Icons.sentiment_dissatisfied;
+        color = Colors.blue;
+        break;
+      case 'anxious':
+        icon = Icons.sentiment_very_dissatisfied;
+        color = Colors.orange;
+        break;
+      case 'disappointed':
+        icon = Icons.sentiment_neutral;
+        color = Colors.purple;
+        break;
+      default:
+        icon = Icons.sentiment_satisfied;
+        color = Colors.green;
+    }
+    
+    return Icon(icon, color: color);
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}';
+  }
+}
+name: kintsugi_app
+description: "A beautiful app for emotional healing"
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.1.0  # 用于调用AI API
+  path_provider: ^2.1.1  # 用于本地文件存储
+  image_picker: ^1.0.4   # 用于选择图片
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # 添加字体（可选）
+  fonts:
+    - family: NotoSans
+      fonts:
+        - asset: fonts/NotoSans-Regular.ttf
+        

@@ -1,1 +1,27 @@
+import 'package:flutter/material.dart';
+import 'color_palette.dart';
 
+class AppTheme {
+  static ThemeData get lightTheme {
+    return ThemeData(
+      primaryColor: ColorPalette.primaryGold,
+      colorScheme: ColorScheme.light(
+        primary: ColorPalette.primaryGold,
+        secondary: ColorPalette.secondaryGold,
+        surface: ColorPalette.ceramicWhite,
+      ),
+      fontFamily: 'NotoSans',
+      appBarTheme: const AppBarTheme(
+        backgroundColor: ColorPalette.primaryGold,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      cardTheme: CardThemeData( 
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+}
